@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="卡片盒">
+<title>卡片盒</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+:root{
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  --hdr:52px; --tabs:58px;
+  --bg:#f6f3ed; --surface:#ffffff; --surface2:#fbfaf6; --ink:#1b1917; --muted:#6d665e;
+  --line:#e7e1d6; --line2:#efeae0;
+  --accent:#2f5d8a; --accent-ink:#ffffff; --accent-soft:#e8eff7;
+  --fleet:#b56a13; --lit:#2f5d8a; --perm:#2f7050; --idx:#6f5194;
+  --fleet-bg:#fbf1e2; --lit-bg:#eaf1f8; --perm-bg:#e9f4ee; --idx-bg:#f1ecf7;
+  --danger:#b3402c;
+  --shadow:0 1px 2px rgba(28,24,18,.05), 0 6px 20px rgba(28,24,18,.05);
+  --r:14px;
+}
+[data-theme=dark]{
+  --bg:#14130f; --surface:#1e1c17; --surface2:#242119; --ink:#f1ece3; --muted:#a79d8e;
+  --line:#332e26; --line2:#2a261f;
+  --accent:#8db8e2; --accent-ink:#0d1723; --accent-soft:#1d2b3a;
+  --fleet:#e0a458; --lit:#8db8e2; --perm:#7cc79f; --idx:#bda3dd;
+  --fleet-bg:#2b2318; --lit-bg:#1b2836; --perm-bg:#1b2b23; --idx-bg:#251f30;
+  --danger:#e5806a;
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.30);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:17px/1.55 -apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Hiragino Sans","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+input,textarea{background:transparent;border:0;outline:0;width:100%}
+::placeholder{color:var(--muted);opacity:.75}
+
+/* ---------- 頂欄 ---------- */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:40;
+  height:calc(var(--hdr) + var(--safe-t));padding:var(--safe-t) 12px 0;
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg);border-bottom:1px solid var(--line);
+}
+#topTitle{font-size:17px;font-weight:650;letter-spacing:.02em;margin:0;flex:1;text-align:center}
+.tbtn{min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:15px;font-weight:600;border-radius:10px}
+.tbtn:active{background:var(--accent-soft)}
+.tbtn.hidden{visibility:hidden}
+
+/* ---------- 主區 ---------- */
+#main{
+  padding:calc(var(--hdr) + var(--safe-t) + 10px) 14px calc(var(--tabs) + var(--safe-b) + 20px);
+  max-width:760px;margin:0 auto;
+}
+.view{display:none}
+.view.on{display:block}
+
+/* 捕捉框 */
+.capture{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);margin-bottom:18px}
+.capture textarea{
+  min-height:74px;font-size:17px;line-height:1.5;resize:none;display:block;
+}
+.capture-foot{display:flex;align-items:center;gap:10px;margin-top:10px}
+.capture-hint{color:var(--muted);font-size:13px;flex:1;line-height:1.4}
+.btn{
+  background:var(--accent);color:var(--accent-ink);border-radius:999px;
+  padding:9px 18px;font-size:15px;font-weight:600;min-height:40px;display:inline-flex;align-items:center;justify-content:center;
+}
+.btn:active{opacity:.82}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line);font-weight:600}
+.btn.plain{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line)}
+.btn.wide{width:100%}
+
+/* 區塊標題 */
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:22px 2px 10px}
+.sec h2{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin:0;text-transform:none}
+.sec .count{font-size:13px;color:var(--muted)}
+
+/* 卡片列 */
+.row{
+  display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 14px;margin-bottom:9px;box-shadow:var(--shadow);
+}
+.row:active{transform:scale(.994);background:var(--surface2)}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;margin-top:7px}
+.t-fleeting .dot,.dot.t-fleeting{background:var(--fleet)}
+.t-literature .dot,.dot.t-literature{background:var(--lit)}
+.t-permanent .dot,.dot.t-permanent{background:var(--perm)}
+.t-index .dot,.dot.t-index{background:var(--idx)}
+.row-main{flex:1;min-width:0}
+.row-title{font-size:16px;font-weight:600;line-height:1.4;word-break:break-word}
+.row-sub{font-size:14.5px;color:var(--muted);line-height:1.5;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.row-meta{font-size:12.5px;color:var(--muted);white-space:nowrap;padding-top:2px}
+.row-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.mini{
+  font-size:13.5px;font-weight:600;color:var(--accent);border:1px solid var(--line);
+  border-radius:999px;padding:6px 13px;min-height:34px;display:inline-flex;align-items:center;
+}
+.mini.plain{color:var(--muted)}
+.mini:active{background:var(--accent-soft)}
+
+/* 空狀態 */
+.empty{text-align:center;color:var(--muted);padding:46px 18px;line-height:1.7}
+.empty .glyph{font-size:30px;opacity:.5;display:block;margin-bottom:10px}
+.empty b{display:block;color:var(--ink);font-weight:600;margin-bottom:6px;font-size:16px}
+
+/* 篩選 */
+.searchbar{
+  display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:10px 13px;box-shadow:var(--shadow);margin-bottom:12px
+}
+.searchbar svg{flex:0 0 auto;color:var(--muted)}
+.chips-row{display:flex;gap:7px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.chips-row::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;font-size:14px;font-weight:600;padding:7px 14px;border-radius:999px;
+  border:1px solid var(--line);color:var(--muted);background:var(--surface);
+}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* ---------- 白板 ---------- */
+#stage{
+  position:fixed;left:0;right:0;z-index:10;display:none;overflow:hidden;
+  top:calc(var(--hdr) + var(--safe-t));bottom:calc(var(--tabs) + var(--safe-b));
+  background:var(--bg);
+  background-image:radial-gradient(var(--line) 1px, transparent 1px);
+  background-size:26px 26px;touch-action:none;
+}
+#stage.on{display:block}
+#world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+#lines{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
+.edge{fill:none;stroke:var(--muted);stroke-width:1.6;opacity:.45}
+.edge.hot{stroke:var(--accent);opacity:.9}
+.node{
+  position:absolute;width:196px;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:11px 12px;box-shadow:var(--shadow);user-select:none;
+}
+.node.sel{outline:2.5px solid var(--accent);outline-offset:2px}
+.node-head{display:flex;gap:7px;align-items:flex-start}
+.node-title{font-size:14.5px;font-weight:650;line-height:1.35;word-break:break-word;flex:1}
+.node-body{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.node-foot{font-size:11px;color:var(--muted);margin-top:7px;letter-spacing:.02em}
+#stageBar{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:8px;
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px;
+  box-shadow:0 4px 18px rgba(0,0,0,.10);z-index:5;
+}
+#stageBar button{
+  min-width:46px;height:40px;padding:0 15px;border-radius:999px;font-size:14px;font-weight:600;
+  color:var(--ink);display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;
+}
+#stageBar button.on{background:var(--accent);color:var(--accent-ink)}
+#stageBar button:active{background:var(--accent-soft)}
+#boardPill{
+  position:absolute;left:12px;top:12px;z-index:5;display:flex;align-items:center;gap:6px;
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:8px 14px;font-size:14px;font-weight:600;box-shadow:var(--shadow);max-width:60%;
+}
+#boardPill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#zoomPill{position:absolute;right:12px;top:12px;z-index:5;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-variant-numeric:tabular-nums}
+#boardEmpty{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;color:var(--muted);text-align:center;padding:30px;line-height:1.7
+}
+
+/* ---------- 分頁列 ---------- */
+#tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;
+  height:calc(var(--tabs) + var(--safe-b));padding-bottom:var(--safe-b);
+  background:var(--bg);border-top:1px solid var(--line);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.02em;
+}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--accent)}
+.tab:active{opacity:.7}
+
+/* ---------- 詳情 ---------- */
+#detail{
+  position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;
+  transform:translateY(101%);transition:transform .24s cubic-bezier(.3,.9,.3,1);
+}
+#detail.on{transform:translateY(0)}
+.dhead{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;
+  padding-top:var(--safe-t);height:calc(var(--hdr) + var(--safe-t));
+  padding-left:6px;padding-right:6px;border-bottom:1px solid var(--line);
+}
+.dhead .tbtn{font-size:15px}
+.dscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(40px + var(--safe-b));max-width:760px;margin:0 auto;width:100%}
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{padding:5px 13px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);min-height:32px}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+#dTypes{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+#dTypes button{
+  font-size:13.5px;font-weight:600;padding:6px 13px;border-radius:999px;border:1px solid var(--line);
+  color:var(--muted);min-height:34px
+}
+#dTypes button.on{color:#fff}
+#dTypes button.on[data-type=fleeting]{background:var(--fleet);border-color:var(--fleet)}
+#dTypes button.on[data-type=literature]{background:var(--lit);border-color:var(--lit)}
+#dTypes button.on[data-type=permanent]{background:var(--perm);border-color:var(--perm)}
+#dTypes button.on[data-type=index]{background:var(--idx);border-color:var(--idx)}
+.dtitle{font-size:23px;font-weight:700;line-height:1.35;margin:2px 0 10px;word-break:break-word}
+.dbody{font-size:17px;line-height:1.65;min-height:34vh;resize:none;display:block;overflow:hidden;word-break:break-word}
+.dpreview{font-size:16.5px;line-height:1.7;min-height:34vh;display:none;word-break:break-word}
+.dpreview.pv{display:block}
+.dpreview h2{font-size:19px;margin:18px 0 8px}
+.dpreview h3{font-size:17px;margin:16px 0 6px}
+.dpreview h4{font-size:16px;margin:14px 0 6px}
+.dpreview p{margin:0 0 10px}
+.dpreview ul,.dpreview ol{margin:0 0 10px;padding-left:22px}
+.dpreview blockquote{margin:0 0 12px;padding:2px 0 2px 13px;border-left:3px solid var(--line);color:var(--muted)}
+.dpreview pre{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:14px}
+.dpreview code{background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:.92em}
+.dpreview hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.dpreview a{color:var(--accent)}
+.wikilink{text-decoration:none;border-bottom:1.5px solid currentColor;padding-bottom:1px}
+.wikilink.missing{color:var(--muted);border-bottom-style:dashed;opacity:.8}
+.field{margin-top:20px;border-top:1px solid var(--line2);padding-top:14px}
+.field label{display:block;font-size:12px;font-weight:700;letter-spacing:.09em;color:var(--muted);margin-bottom:8px}
+.field input[type=text]{font-size:16px;padding:9px 0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:5px 10px 5px 12px;font-size:13.5px;font-weight:600}
+.tag b{font-weight:600}
+.tag i{font-style:normal;opacity:.6;font-size:15px;line-height:1}
+.linkitem{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px}
+.linkitem .lt{font-size:15px;font-weight:600;display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+.linkitem .lw{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.linkitem .lx{color:var(--muted);font-size:15px;padding:0 4px}
+.dfoot{margin-top:26px;font-size:12.5px;color:var(--muted);line-height:1.7}
+
+/* ---------- 底部彈層 ---------- */
+#scrim{position:fixed;inset:0;background:rgba(20,16,10,.42);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+#scrim.on{opacity:1;pointer-events:auto}
+#sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:71;background:var(--surface);
+  border-radius:18px 18px 0 0;padding:8px 16px calc(16px + var(--safe-b));
+  transform:translateY(101%);transition:transform .24s cubic-bezier(.3,.9,.3,1);
+  max-height:82vh;display:flex;flex-direction:column;max-width:760px;margin:0 auto;
+  box-shadow:0 -8px 30px rgba(0,0,0,.16);
+}
+#sheet.on{transform:translateY(0)}
+#sheet .handle{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 12px;flex:0 0 auto}
+#sheet .stitle{font-size:15px;font-weight:700;margin:0 0 12px;padding:0 2px}
+#sheetBody{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.menu-item{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:15px 6px;font-size:16px;border-bottom:1px solid var(--line2);
+}
+.menu-item:last-child{border-bottom:0}
+.menu-item .ic{width:22px;text-align:center;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.menu-item .dot{margin-top:0}
+.menu-item.danger{color:var(--danger)}
+.menu-item small{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:2px}
+
+/* 提示 */
+#toast{
+  position:fixed;left:50%;bottom:calc(var(--tabs) + var(--safe-b) + 18px);transform:translate(-50%,14px);
+  background:#24201a;color:#fff;font-size:14px;padding:10px 18px;border-radius:999px;
+  z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:86vw;text-align:center
+}
+#toast.on{opacity:.96;transform:translate(-50%,0)}
+#stage.on ~ #toast{bottom:calc(var(--tabs) + var(--safe-b) + 86px)}
+[data-theme=dark] #toast{background:#f1ece3;color:#1b1917}
+
+/* 統計 */
+.stat{display:flex;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line2);font-size:15px}
+.stat:last-child{border-bottom:0}
+.stat b{font-weight:650;font-variant-numeric:tabular-nums}
+.hint{font-size:13px;color:var(--muted);line-height:1.65;margin:10px 2px 0}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <button class="tbtn" id="leftBtn"></button>
+  <h1 id="topTitle">收件匣</h1>
+  <button class="tbtn" id="rightBtn">＋</button>
+</header>
+
+<main id="main">
+  <!-- 收件匣 -->
+  <section class="view on" id="view-inbox">
+    <div class="capture">
+      <textarea id="capText" rows="2" placeholder="現在想到什麼？一句話就夠。"></textarea>
+      <div class="capture-foot">
+        <div class="capture-hint">先寫下來，之後再整理。</div>
+        <button class="btn" data-act="capture">存入</button>
+      </div>
+    </div>
+    <div class="sec"><h2>待整理</h2><span class="count" id="inboxCount"></span></div>
+    <div id="inboxList"></div>
+  </section>
+
+  <!-- 卡片庫 -->
+  <section class="view" id="view-cards">
+    <div class="searchbar">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="text" placeholder="搜尋標題、內容、標籤" autocomplete="off">
+    </div>
+    <div class="chips-row" id="typeFilter">
+      <button class="chip on" data-t="all">全部</button>
+      <button class="chip" data-t="permanent">永久筆記</button>
+      <button class="chip" data-t="literature">文獻筆記</button>
+      <button class="chip" data-t="index">索引卡</button>
+    </div>
+    <div id="libList"></div>
+  </section>
+
+  <!-- 白板 -->
+  <section class="view" id="view-board"></section>
+
+  <!-- 更多 -->
+  <section class="view" id="view-more">
+    <div class="sec"><h2>統計</h2></div>
+    <div id="stats"></div>
+    <div class="sec"><h2>資料</h2></div>
+    <button class="btn plain wide" data-act="export-json" style="margin-bottom:9px">匯出備份（JSON）</button>
+    <button class="btn plain wide" data-act="export-md" style="margin-bottom:9px">匯出 Markdown</button>
+    <button class="btn plain wide" data-act="import-json" style="margin-bottom:9px">匯入備份</button>
+    <input id="fileInput" type="file" accept="application/json,.json" style="display:none">
+    <div class="sec"><h2>外觀</h2></div>
+    <div class="seg" id="themeSeg" style="margin-bottom:6px">
+      <button data-theme-v="light">淺色</button>
+      <button data-theme-v="dark">深色</button>
+    </div>
+    <div class="sec"><h2>關於</h2></div>
+    <div class="hint" id="about"></div>
+  </section>
+</main>
+
+<!-- 白板舞台 -->
+<div id="stage">
+  <div id="world"><svg id="lines"></svg><div id="nodes"></div></div>
+  <button id="boardPill" data-act="board-menu"><span id="boardName">白板</span> ▾</button>
+  <div id="zoomPill">100%</div>
+  <div id="boardEmpty"><div>在白板上放下卡片，用位置思考。<br>下方「＋」加入第一張。</div></div>
+  <div id="stageBar">
+    <button data-act="board-add">＋ 卡片</button>
+    <button data-act="link-mode" id="linkBtn">連結</button>
+    <button data-act="fit-view">全覽</button>
+  </div>
+</div>
+
+<!-- 詳情 -->
+<section id="detail">
+  <div class="dhead">
+    <button class="tbtn" data-act="close-detail">返回</button>
+    <div class="seg" id="dMode"><button class="on" data-act="d-edit">編輯</button><button data-act="d-prev">預覽</button></div>
+    <button class="tbtn" data-act="card-menu">⋯</button>
+  </div>
+  <div class="dscroll" id="dscroll">
+    <div id="dTypes">
+      <button data-type="fleeting">閃念</button>
+      <button data-type="literature">文獻</button>
+      <button data-type="permanent">永久</button>
+      <button data-type="index">索引</button>
+    </div>
+    <input id="dTitle" class="dtitle" type="text" placeholder="一句話標題">
+    <textarea id="dBody" class="dbody" placeholder="用自己的話寫下這個想法。&#10;&#10;可用 [[卡片標題]] 連到其他卡。"></textarea>
+    <div id="dPreview" class="dpreview"></div>
+
+    <div class="field">
+      <label>標籤</label>
+      <div class="chips" id="dChips"></div>
+      <input id="dTags" type="text" placeholder="輸入後按空白鍵或逗號">
+    </div>
+    <div class="field">
+      <label>來源</label>
+      <input id="dSource" type="text" placeholder="書名、作者、頁碼">
+    </div>
+    <div class="field">
+      <label>連結</label>
+      <div id="dLinks"></div>
+      <button class="btn ghost" data-act="add-link" style="margin-top:6px">＋ 連結到另一張卡</button>
+    </div>
+    <div class="dfoot" id="dFoot"></div>
+  </div>
+</section>
+
+<nav id="tabs">
+  <button class="tab on" data-view="inbox">
+    <svg viewBox="0 0 24 24"><path d="M4 13h4l1.5 3h5L16 13h4"/><path d="M5 6h14l2 7v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/></svg>
+    <span>收件匣</span>
+  </button>
+  <button class="tab" data-view="cards">
+    <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg>
+    <span>卡片庫</span>
+  </button>
+  <button class="tab" data-view="board">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="9" width="8" height="7" rx="1.5"/><path d="M11 7.5h2"/></svg>
+    <span>白板</span>
+  </button>
+  <button class="tab" data-view="more">
+    <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+    <span>更多</span>
+  </button>
+</nav>
+
+<div id="scrim" data-act="close-sheet"></div>
+<div id="sheet"><div class="handle"></div><h3 class="stitle" id="sheetTitle"></h3><div id="sheetBody"></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const VERSION = '1.0.0';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+const nowISO = () => new Date().toISOString();
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const TYPE_LABEL = { fleeting: '閃念', literature: '文獻', permanent: '永久', index: '索引' };
+
+function hm(iso) {
+  const d = new Date(iso), t = new Date();
+  const time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  if (d.toDateString() === t.toDateString()) return '今天 ' + time;
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + time;
+}
+
+/* ---------------- Markdown ---------------- */
+function findCardByTitle(t) {
+  const k = String(t).trim().toLowerCase();
+  return S.cards.find(c => (c.title || '').trim().toLowerCase() === k);
+}
+function inline(src) {
+  let s = esc(src);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  s = s.replace(/\[\[([^\]]+)\]\]/g, (m, t) => {
+    const c = findCardByTitle(t);
+    if (c) return '<a href="#" class="wikilink" data-act="open-card" data-id="' + c.id + '">' + t + '</a>';
+    return '<span class="wikilink missing">' + t + '</span>';
+  });
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function md(src) {
+  const lines = String(src || '').split('\n');
+  const out = [], para = [];
+  let inUl = false, inOl = false, inCode = false;
+  const flush = () => { if (para.length) { out.push('<p>' + inline(para.join(' ')) + '</p>'); para.length = 0; } };
+  const closeL = () => { if (inUl) { out.push('</ul>'); inUl = false; } if (inOl) { out.push('</ol>'); inOl = false; } };
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (/^\s*```/.test(line)) { closeL(); flush(); out.push(inCode ? '</code></pre>' : '<pre><code>'); inCode = !inCode; continue; }
+    if (inCode) { out.push(esc(raw)); continue; }
+    if (!line.trim()) { closeL(); flush(); continue; }
+    let m;
+    if ((m = line.match(/^(#{1,3})\s+(.*)$/))) { closeL(); flush(); const n = m[1].length + 1; out.push('<h' + n + '>' + inline(m[2]) + '</h' + n + '>'); continue; }
+    if ((m = line.match(/^\s*[-*]\s+(.*)$/))) { flush(); if (!inUl) { closeL(); out.push('<ul>'); inUl = true; } out.push('<li>' + inline(m[1]) + '</li>'); continue; }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) { flush(); if (!inOl) { closeL(); out.push('<ol>'); inOl = true; } out.push('<li>' + inline(m[1]) + '</li>'); continue; }
+    if ((m = line.match(/^>\s?(.*)$/))) { closeL(); flush(); out.push('<blockquote>' + inline(m[1]) + '</blockquote>'); continue; }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { closeL(); flush(); out.push('<hr>'); continue; }
+    para.push(line.trim());
+  }
+  closeL(); flush(); if (inCode) out.push('</code></pre>');
+  return out.join('\n');
+}
+
+/* ---------------- 資料層 ---------------- */
+const S = { cards: [], links: [], boards: [], pos: [], meta: {}, view: 'inbox', q: '', typeFilter: 'all', boardId: null, linkMode: null, cur: null, capDraft: '' };
+let db = null, persistOK = true, idbOK = true;
+
+function dbOpen() {
+  return new Promise((res, rej) => {
+    if (!('indexedDB' in window)) return rej(new Error('no idb'));
+    const r = indexedDB.open('zettel-box', 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      [['cards', 'id'], ['links', 'id'], ['boards', 'id'], ['pos', 'id'], ['meta', 'key']].forEach(([n, k]) => {
+        if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k });
+      });
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.onblocked = () => rej(new Error('blocked'));
+  });
+}
+const store = (n, mode) => db.transaction(n, mode || 'readonly').objectStore(n);
+const put = (n, v) => new Promise((res, rej) => { const r = store(n, 'readwrite').put(v); r.onsuccess = res; r.onerror = () => rej(r.error); });
+const drop = (n, k) => new Promise((res, rej) => { const r = store(n, 'readwrite').delete(k); r.onsuccess = res; r.onerror = () => rej(r.error); });
+const all = n => new Promise((res, rej) => { const r = store(n).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); });
+const clearAll = () => new Promise((res, rej) => {
+  const t = db.transaction(['cards', 'links', 'boards', 'pos'], 'readwrite');
+  t.objectStore('cards').clear(); t.objectStore('links').clear(); t.objectStore('boards').clear(); t.objectStore('pos').clear();
+  t.oncomplete = res; t.onerror = () => rej(t.error);
+});
+
+const cardById = id => S.cards.find(c => c.id === id);
+const posKey = (b, c) => b + '|' + c;
+const posFor = (b, c) => {
+  let p = S.pos.find(x => x.boardId === b && x.cardId === c);
+  if (!p) { p = { id: posKey(b, c), boardId: b, cardId: c, x: 0, y: 0 }; S.pos.push(p); }
+  return p;
+};
+const linksOut = id => S.links.filter(l => l.from === id);
+const linksIn = id => S.links.filter(l => l.to === id);
+
+async function addLink(from, to, why, auto) {
+  if (!from || !to || from === to) return null;
+  const exist = S.links.find(l => l.from === from && l.to === to);
+  if (exist) return exist;
+  const l = { id: uid('l_'), from, to, why: why || '', auto: !!auto, created: nowISO() };
+  S.links.push(l);
+  await put('links', l);
+  return l;
+}
+async function removeLink(id) {
+  S.links = S.links.filter(l => l.id !== id);
+  await drop('links', id);
+}
+
+/* ---------------- 卡片操作 ---------------- */
+async function saveCard(c, opts) {
+  c.updated = nowISO();
+  if (!c.title || !c.title.trim()) {
+    const first = (c.body || '').split('\n').map(x => x.trim()).find(Boolean) || '（無標題）';
+    c.title = first.replace(/^#+\s*/, '').slice(0, 60);
+  }
+  await put('cards', c);
+  await syncWiki(c);
+  if (!opts || !opts.quiet) renderCurrent();
+  return c;
+}
+async function syncWiki(c) {
+  const titles = Array.from(String(c.body || '').matchAll(/\[\[([^\]\n]+)\]\]/g)).map(m => m[1].trim()).filter(Boolean);
+  const targets = new Set();
+  titles.forEach(t => { const tgt = findCardByTitle(t); if (tgt && tgt.id !== c.id) targets.add(tgt.id); });
+  for (const l of S.links.filter(l => l.from === c.id && l.auto)) {
+    if (!targets.has(l.to)) await removeLink(l.id);
+  }
+  for (const tid of targets) {
+    if (!S.links.some(l => l.from === c.id && l.to === tid)) await addLink(c.id, tid, '', true);
+  }
+}
+async function deleteCard(id) {
+  const c = cardById(id);
+  if (!c) return;
+  S.cards = S.cards.filter(x => x.id !== id);
+  await drop('cards', id);
+  const dead = S.links.filter(l => l.from === id || l.to === id).map(l => l.id);
+  for (const lid of dead) await removeLink(lid);
+  const deadPos = S.pos.filter(p => p.cardId === id).map(p => p.id);
+  S.pos = S.pos.filter(p => p.cardId !== id);
+  for (const pid of deadPos) await drop('pos', pid);
+  if (S.cur === id) closeDetail();
+  renderCurrent();
+}
+async function newCard(fields) {
+  const c = Object.assign({
+    id: uid('c_'), type: 'permanent', title: '', body: '', tags: [], source: '',
+    created: nowISO(), updated: nowISO()
+  }, fields || {});
+  S.cards.push(c);
+  await put('cards', c);
+  return c;
+}
+
+/* ---------------- 導覽 ---------------- */
+const TITLES = { inbox: '收件匣', cards: '卡片庫', board: '白板', more: '更多' };
+function renderCurrent() {
+  if (S.view === 'inbox') renderInbox();
+  else if (S.view === 'cards') renderLibrary();
+  else if (S.view === 'board') renderBoard();
+  else renderMore();
+  syncTopbar();
+}
+function syncTopbar() {
+  $('#topTitle').textContent = TITLES[S.view] || '卡片盒';
+  const left = $('#leftBtn'), right = $('#rightBtn');
+  left.classList.add('hidden'); left.textContent = '';
+  right.classList.add('hidden'); right.textContent = '＋';
+  if (S.view === 'cards') { right.classList.remove('hidden'); right.dataset.act = 'new-card'; }
+  if (S.view === 'inbox') { right.classList.remove('hidden'); right.dataset.act = 'focus-capture'; }
+  if (S.view === 'board') { right.classList.add('hidden'); }
+}
+function go(view) {
+  S.view = view;
+  $$('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + view));
+  $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.view === view));
+  const board = view === 'board';
+  $('#stage').classList.toggle('on', board);
+  $('#main').style.display = board ? 'none' : 'block';
+  if (board) { requestAnimationFrame(() => { renderBoard(); }); }
+  renderCurrent();
+  window.scrollTo(0, 0);
+}
+
+/* ---------------- 收件匣 ---------------- */
+function renderInbox() {
+  const list = S.cards.filter(c => c.type === 'fleeting').sort((a, b) => b.created.localeCompare(a.created));
+  $('#inboxCount').textContent = list.length ? list.length + ' 則' : '';
+  $('#inboxList').innerHTML = list.length ? list.map(c => (
+    '<div class="row t-fleeting" data-act="open-card" data-id="' + c.id + '" role="button" tabindex="0">' +
+      '<span class="dot t-fleeting"></span>' +
+      '<div class="row-main">' +
+        '<div class="row-sub" style="-webkit-line-clamp:4">' + esc((c.body || '').slice(0, 220)) + '</div>' +
+        '<div class="row-meta" style="margin-top:6px">' + hm(c.created) + '</div>' +
+        '<div class="row-actions">' +
+          '<button class="mini" data-act="upgrade" data-id="' + c.id + '">升級為卡片</button>' +
+          '<button class="mini plain" data-act="del-card" data-id="' + c.id + '">刪除</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  )).join('') : (
+    '<div class="empty"><span class="glyph">✎</span><b>收件匣是空的</b>在上方寫下一句話，不必完整。<br>整理時再決定它是文獻、永久，還是索引。</div>'
+  );
+}
+
+/* ---------------- 卡片庫 ---------------- */
+function renderLibrary() {
+  const q = S.q.trim().toLowerCase();
+  let list = S.cards.filter(c => c.type !== 'fleeting');
+  if (S.typeFilter !== 'all') list = list.filter(c => c.type === S.typeFilter);
+  if (q) {
+    list = list.filter(c => (c.title + ' ' + c.body + ' ' + (c.tags || []).join(' ')).toLowerCase().includes(q));
+  }
+  list.sort((a, b) => b.updated.localeCompare(a.updated));
+  if (!list.length) {
+    $('#libList').innerHTML = '<div class="empty"><span class="glyph">◫</span><b>' +
+      (q || S.typeFilter !== 'all' ? '沒有符合的卡片' : '還沒有卡片') +
+      '</b>' + (q || S.typeFilter !== 'all' ? '試試其他關鍵字或篩選。' : '由收件匣升級，或按右上角新增。') + '</div>';
+    return;
+  }
+  $('#libList').innerHTML = list.map(c => {
+    const out = linksOut(c.id).length, inc = linksIn(c.id).length;
+    const meta = [];
+    if (out) meta.push(out + ' 連出');
+    if (inc) meta.push(inc + ' 連入');
+    return '<div class="row t-' + c.type + '" data-act="open-card" data-id="' + c.id + '" role="button" tabindex="0">' +
+      '<span class="dot t-' + c.type + '"></span>' +
+      '<div class="row-main">' +
+        '<div class="row-title">' + esc(c.title) + '</div>' +
+        ((c.body || '').trim() ? '<div class="row-sub">' + esc(c.body.replace(/\n+/g, ' ').slice(0, 120)) + '</div>' : '') +
+        (((c.tags || []).length) ? '<div class="row-meta" style="margin-top:6px;color:var(--accent)">' + c.tags.map(t => '#' + esc(t)).join('  ') + '</div>' : '') +
+      '</div>' +
+      (meta.length ? '<div class="row-meta">' + meta.join('<br>') + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+/* ---------------- 白板 ---------------- */
+const B = { tx: 0, ty: 0, k: 1 };
+function applyView() {
+  $('#world').style.transform = 'translate3d(' + B.tx + 'px,' + B.ty + 'px,0) scale(' + B.k + ')';
+  $('#zoomPill').textContent = Math.round(B.k * 100) + '%';
+}
+function boardById(id) { return S.boards.find(b => b.id === id); }
+function renderBoard() {
+  if (!S.boards.length) return;
+  if (!S.boardId || !boardById(S.boardId)) S.boardId = S.boards[0].id;
+  $('#boardName').textContent = boardById(S.boardId).name;
+  const items = S.pos.filter(p => p.boardId === S.boardId && cardById(p.cardId));
+  $('#boardEmpty').style.display = items.length ? 'none' : 'flex';
+  $('#nodes').innerHTML = items.map(p => {
+    const c = cardById(p.cardId);
+    const body = (c.body || '').replace(/\n+/g, ' ').slice(0, 90);
+    const n = linksOut(c.id).length + linksIn(c.id).length;
+    return '<div class="node" data-id="' + c.id + '" style="left:' + p.x + 'px;top:' + p.y + 'px">' +
+      '<div class="node-head"><span class="dot t-' + c.type + '" style="margin-top:5px"></span>' +
+        '<span class="node-title">' + esc(c.title) + '</span></div>' +
+      (body ? '<div class="node-body">' + esc(body) + '</div>' : '') +
+      (n ? '<div class="node-foot">' + n + ' 條連結</div>' : '') +
+    '</div>';
+  }).join('');
+  const vk = S.meta['view-' + S.boardId];
+  if (vk) { B.tx = vk.tx; B.ty = vk.ty; B.k = vk.k; } else { B.tx = 40; B.ty = 40; B.k = 1; }
+  applyView();
+  requestAnimationFrame(drawLines);
+}
+function drawLines() {
+  const onBoard = new Set(S.pos.filter(p => p.boardId === S.boardId).map(p => p.cardId));
+  const parts = ['<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>'];
+  for (const l of S.links) {
+    if (!onBoard.has(l.from) || !onBoard.has(l.to)) continue;
+    const a = document.querySelector('.node[data-id="' + l.from + '"]');
+    const b = document.querySelector('.node[data-id="' + l.to + '"]');
+    if (!a || !b) continue;
+    const ax = parseFloat(a.style.left) + a.offsetWidth / 2, ay = parseFloat(a.style.top) + a.offsetHeight / 2;
+    const bx = parseFloat(b.style.left) + b.offsetWidth / 2, by = parseFloat(b.style.top) + b.offsetHeight / 2;
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+    const mx = (ax + bx) / 2 - dy / len * 34, my = (ay + by) / 2 + dx / len * 34;
+    parts.push('<path class="edge' + (S.linkMode && S.linkMode === l.from ? ' hot' : '') + '" d="M' + ax.toFixed(1) + ',' + ay.toFixed(1) +
+      ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + bx.toFixed(1) + ',' + by.toFixed(1) + '" marker-end="url(#ah)"/>');
+  }
+  $('#lines').innerHTML = parts.join('');
+}
+function saveViewMeta() {
+  S.meta['view-' + S.boardId] = { tx: B.tx, ty: B.ty, k: B.k };
+  put('meta', { key: 'view-' + S.boardId, tx: B.tx, ty: B.ty, k: B.k });
+}
+function centerWorld() {
+  const r = $('#stage').getBoundingClientRect();
+  return { x: (r.width / 2 - B.tx) / B.k, y: (r.height / 2 - B.ty) / B.k, w: r.width, h: r.height };
+}
+async function placeCard(cardId) {
+  const c = centerWorld();
+  const taken = S.pos.filter(p => p.boardId === S.boardId && p.cardId !== cardId).map(p => {
+    const el = document.querySelector('.node[data-id="' + p.cardId + '"]');
+    return { x: p.x, y: p.y, w: el ? el.offsetWidth : 196, h: el ? el.offsetHeight : 120 };
+  });
+  const W = 196, H = 120, GAP = 22;
+  const hits = (x, y) => taken.some(t => x < t.x + t.w + GAP && x + W + GAP > t.x && y < t.y + t.h + GAP && y + H + GAP > t.y);
+  let x = Math.round(c.x - W / 2), y = Math.round(c.y - H / 2);
+  if (hits(x, y)) {
+    const base = { x: x, y: y };
+    const cands = [];
+    for (let dx = -6; dx <= 6; dx++) for (let dy = -6; dy <= 6; dy++) {
+      if (!dx && !dy) continue;
+      cands.push({ dx: dx, dy: dy, score: Math.hypot(dx, dy * 0.85) + (dx < 0 ? 0.4 : 0) + (dy < 0 ? 0.2 : 0) });
+    }
+    cands.sort((a, b) => a.score - b.score);
+    for (const cd of cands) {
+      const nx = base.x + cd.dx * (W + GAP), ny = base.y + cd.dy * (H + GAP);
+      if (!hits(nx, ny)) { x = nx; y = ny; break; }
+    }
+  }
+  const p = posFor(S.boardId, cardId);
+  p.x = x; p.y = y;
+  await put('pos', p);
+}
+function fitView() {
+  const items = S.pos.filter(p => p.boardId === S.boardId && cardById(p.cardId));
+  if (!items.length) { B.tx = 40; B.ty = 40; B.k = 1; applyView(); saveViewMeta(); return; }
+  let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+  items.forEach(p => {
+    const el = document.querySelector('.node[data-id="' + p.cardId + '"]');
+    const w = el ? el.offsetWidth : 196, h = el ? el.offsetHeight : 90;
+    x1 = Math.min(x1, p.x); y1 = Math.min(y1, p.y); x2 = Math.max(x2, p.x + w); y2 = Math.max(y2, p.y + h);
+  });
+  const r = $('#stage').getBoundingClientRect();
+  const pad = 40;
+  const k = clamp(Math.min((r.width - pad * 2) / Math.max(1, x2 - x1), (r.height - pad * 2) / Math.max(1, y2 - y1)), 0.25, 1.6);
+  B.k = k;
+  B.tx = r.width / 2 - ((x1 + x2) / 2) * k;
+  B.ty = r.height / 2 - ((y1 + y2) / 2) * k;
+  applyView(); saveViewMeta();
+}
+
+/* 手勢 */
+const ptrs = new Map();
+let dragState = null, panState = null, pinchState = null, lpTimer = null;
+const stageEl = $('#stage');
+function stagePoint(e) { const r = stageEl.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+stageEl.addEventListener('pointerdown', e => {
+  if (e.button) return;
+  const p = stagePoint(e);
+  ptrs.set(e.pointerId, p);
+  const nodeEl = e.target.closest('.node');
+  if (e.target.closest('#stageBar') || e.target.closest('#boardPill')) { ptrs.delete(e.pointerId); return; }
+  if (ptrs.size === 1) {
+    if (nodeEl) {
+      dragState = { id: nodeEl.dataset.id, el: nodeEl, sx: p.x, sy: p.y, ox: parseFloat(nodeEl.style.left), oy: parseFloat(nodeEl.style.top), moved: false };
+      if (!S.linkMode) lpTimer = setTimeout(() => {
+        if (dragState && !dragState.moved) { openNodeMenu(dragState.id); dragState = null; }
+      }, 480);
+    } else {
+      panState = { sx: p.x, sy: p.y, tx0: B.tx, ty0: B.ty, moved: false };
+    }
+  } else if (ptrs.size === 2) {
+    clearTimeout(lpTimer); dragState = null; panState = null;
+    const [a, b] = Array.from(ptrs.values());
+    pinchState = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
+});
+stageEl.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const p = stagePoint(e);
+  ptrs.set(e.pointerId, p);
+  if (pinchState && ptrs.size >= 2) {
+    const [a, b] = Array.from(ptrs.values());
+    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const k = clamp(B.k * d / pinchState.d, 0.28, 2.6);
+    B.tx = mx - (pinchState.mx - B.tx) * (k / B.k);
+    B.ty = my - (pinchState.my - B.ty) * (k / B.k);
+    B.k = k;
+    pinchState.d = d; pinchState.mx = mx; pinchState.my = my;
+    applyView();
+    return;
+  }
+  if (dragState) {
+    const dx = p.x - dragState.sx, dy = p.y - dragState.sy;
+    if (!dragState.moved && Math.hypot(dx, dy) > 7) { dragState.moved = true; clearTimeout(lpTimer); }
+    if (dragState.moved && !S.linkMode) {
+      const pos = posFor(S.boardId, dragState.id);
+      pos.x = Math.round(dragState.ox + dx / B.k);
+      pos.y = Math.round(dragState.oy + dy / B.k);
+      dragState.el.style.left = pos.x + 'px';
+      dragState.el.style.top = pos.y + 'px';
+      requestAnimationFrame(drawLines);
+    }
+    return;
+  }
+  if (panState) {
+    const dx = p.x - panState.sx, dy = p.y - panState.sy;
+    if (!panState.moved && Math.hypot(dx, dy) > 6) panState.moved = true;
+    if (panState.moved) { B.tx = panState.tx0 + dx; B.ty = panState.ty0 + dy; applyView(); }
+  }
+});
+function endPointer(e) {
+  clearTimeout(lpTimer);
+  ptrs.delete(e.pointerId);
+  if (pinchState && ptrs.size < 2) { pinchState = null; saveViewMeta(); }
+  if (dragState) {
+    const d = dragState; dragState = null;
+    if (d.moved) { const p = posFor(S.boardId, d.id); put('pos', p); }
+    else tapNode(d.id);
+    return;
+  }
+  if (panState && panState.moved) saveViewMeta();
+  panState = null;
+}
+stageEl.addEventListener('pointerup', endPointer);
+stageEl.addEventListener('pointercancel', endPointer);
+stageEl.addEventListener('wheel', e => {
+  e.preventDefault();
+  const p = stagePoint(e);
+  const k = clamp(B.k * Math.exp(-e.deltaY * 0.0016), 0.28, 2.6);
+  B.tx = p.x - (p.x - B.tx) * (k / B.k);
+  B.ty = p.y - (p.y - B.ty) * (k / B.k);
+  B.k = k; applyView(); saveViewMeta();
+}, { passive: false });
+
+function tapNode(id) {
+  if (S.linkMode) {
+    if (S.linkMode === 'pick') {
+      S.linkMode = id; markSel(id); drawLines(); toast('再點另一張卡');
+      return;
+    }
+    if (S.linkMode === id) { S.linkMode = null; $('#linkBtn').classList.remove('on'); markSel(null); drawLines(); return; }
+    const from = S.linkMode;
+    S.linkMode = null; $('#linkBtn').classList.remove('on'); markSel(null); drawLines();
+    askReason(from, id);
+    return;
+  }
+  openCard(id);
+}
+function markSel(id) {
+  $$('.node').forEach(n => n.classList.toggle('sel', n.dataset.id === id));
+}
+function openNodeMenu(id) {
+  const c = cardById(id);
+  if (!c) return;
+  openSheet('卡片：' + c.title, [
+    { ic: 'edit', label: '編輯內容', run: () => openCard(id) },
+    { ic: 'link', label: '連到另一張卡', run: () => { S.linkMode = id; $('#linkBtn').classList.add('on'); markSel(id); drawLines(); toast('點另一張卡以建立連結'); } },
+    { ic: 'minus', label: '從白板移除', run: async () => { const p = S.pos.find(x => x.boardId === S.boardId && x.cardId === id); if (p) { S.pos = S.pos.filter(x => x !== p); await drop('pos', p.id); } renderBoard(); } },
+    { ic: 'trash', label: '刪除卡片', danger: true, run: () => confirmDelete(id) }
+  ]);
+}
+
+/* ---------------- 詳情 ---------------- */
+let saveTimer = null;
+function openCard(id) {
+  const c = cardById(id);
+  if (!c) return;
+  S.cur = id;
+  $('#detail').classList.add('on');
+  $('#dTitle').value = c.title || '';
+  $('#dBody').value = c.body || '';
+  $('#dSource').value = c.source || '';
+  $('#dTags').value = '';
+  renderTypeSeg(c.type);
+  renderChips(c.tags || []);
+  $('#dstatus') && ($('#dstatus').textContent = '');
+  $('#dFoot').innerHTML = '建立於 ' + hm(c.created) + '<br>更新於 ' + hm(c.updated);
+  showPreview(false);
+  autoGrow();
+  renderDetailLinks();
+}
+function renderTypeSeg(type) {
+  $$('#dTypes button').forEach(b => b.classList.toggle('on', b.dataset.type === type));
+  const ph = {
+    fleeting: '先隨手寫下，之後再整理。',
+    literature: '摘錄來源的重點，再加上你自己的回應。',
+    permanent: '用自己的話寫下這個想法。可用 [[卡片標題]] 連到其他卡。',
+    index: '把相關卡片串起來：每行寫 [[卡片標題]]，再加上一句說明。'
+  };
+  $('#dBody').placeholder = ph[type] || ph.permanent;
+}
+function renderChips(tags) {
+  $('#dChips').innerHTML = tags.map((t, i) =>
+    '<span class="tag"><b data-act="tag-filter" data-tag="' + esc(t) + '">#' + esc(t) + '</b><i data-act="del-tag" data-i="' + i + '">×</i></span>').join('');
+}
+function currentTags() {
+  return $$('#dChips .tag b').map(b => b.textContent.replace(/^#/, ''));
+}
+function closeDetail() {
+  clearTimeout(saveTimer);
+  doSave(true).then(() => { $('#detail').classList.remove('on'); S.cur = null; renderCurrent(); });
+}
+function showPreview(on) {
+  $('#dBody').style.display = on ? 'none' : 'block';
+  $('#dPreview').classList.toggle('pv', on);
+  $$('#dMode button').forEach((b, i) => b.classList.toggle('on', (i === 1) === on));
+  if (on) { $('#dPreview').innerHTML = md($('#dBody').value) || '<p style="color:var(--muted)">（空白）</p>'; }
+}
+function autoGrow() {
+  const t = $('#dBody');
+  t.style.height = 'auto';
+  t.style.height = Math.max(t.scrollHeight, 200) + 'px';
+}
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => doSave(), 420);
+}
+async function doSave(force) {
+  if (!S.cur) return;
+  const c = cardById(S.cur);
+  if (!c) return;
+  const before = JSON.stringify([c.title, c.body, c.tags, c.source, c.type]);
+  c.title = $('#dTitle').value.trim();
+  c.body = $('#dBody').value;
+  c.tags = currentTags();
+  c.source = $('#dSource').value.trim();
+  const after = JSON.stringify([c.title, c.body, c.tags, c.source, c.type]);
+  if (!force && before === after) return;
+  await saveCard(c, { quiet: true });
+  $('#dFoot').innerHTML = '建立於 ' + hm(c.created) + '<br>更新於 ' + hm(c.updated);
+  if (S.view === 'cards' || S.view === 'inbox') renderCurrent();
+  if (S.view === 'board') renderBoard();
+}
+function renderDetailLinks() {
+  const out = linksOut(S.cur), inc = linksIn(S.cur);
+  let html = '';
+  if (out.length) {
+    html += '<div style="font-size:12px;color:var(--muted);margin:0 0 7px">這張卡連到</div>';
+    html += out.map(l => {
+      const t = cardById(l.to);
+      if (!t) return '';
+      return '<div class="linkitem"><div class="lt"><span>' + esc(t.title) + '</span>' +
+        '<i class="lx" data-act="unlink" data-id="' + l.id + '">×</i></div>' +
+        (l.why ? '<div class="lw">' + esc(l.why) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  if (inc.length) {
+    html += '<div style="font-size:12px;color:var(--muted);margin:12px 0 7px">連到這張卡</div>';
+    html += inc.map(l => {
+      const t = cardById(l.from);
+      if (!t) return '';
+      return '<div class="linkitem" data-act="open-card" data-id="' + t.id + '"><div class="lt"><span>' + esc(t.title) + '</span><i class="lx">›</i></div>' +
+        (l.why ? '<div class="lw">' + esc(l.why) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  if (!html) html = '<div class="hint" style="margin:0 0 8px">還沒有連結。連結時寫下「為什麼相關」，日後才找得回來。</div>';
+  $('#dLinks').innerHTML = html;
+}
+
+/* ---------------- 更多 ---------------- */
+function renderMore() {
+  const size = (JSON.stringify({ c: S.cards, l: S.links, b: S.boards, p: S.pos }).length / 1024).toFixed(1);
+  $('#stats').innerHTML =
+    '<div class="stat"><span>卡片總數</span><b>' + S.cards.length + '</b></div>' +
+    '<div class="stat"><span>待整理（收件匣）</span><b>' + S.cards.filter(c => c.type === 'fleeting').length + '</b></div>' +
+    '<div class="stat"><span>連結</span><b>' + S.links.length + '</b></div>' +
+    '<div class="stat"><span>白板</span><b>' + S.boards.length + '</b></div>' +
+    '<div class="stat"><span>資料大小</span><b>' + size + ' KB</b></div>';
+  $('#about').innerHTML =
+    '版本 <b>' + VERSION + '</b>．資料存於此裝置的 IndexedDB' + (idbOK ? '' : '（目前為暫存模式，關閉頁面後資料會消失）') + '。<br>' +
+    '加到主畫面後可離線使用。換裝置或清除 Safari 資料前，請先「匯出備份」。<br><br>' +
+    '操作要點：收件匣快速寫下 → 升級為文獻／永久／索引 → 在白板上拉線連起來 → 每條連結都寫一句理由。';
+  $$('#themeSeg button').forEach(b => b.classList.toggle('on', b.dataset.themeV === document.documentElement.dataset.theme));
+}
+
+/* ---------------- 彈層 ---------------- */
+const SVG_OPEN = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+const ICONS = {
+  edit: SVG_OPEN + '<path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  link: SVG_OPEN + '<path d="M10.5 13.5a4.5 4.5 0 0 0 6.4 0l1.8-1.8a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M13.5 10.5a4.5 4.5 0 0 0-6.4 0l-1.8 1.8a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>',
+  minus: SVG_OPEN + '<circle cx="12" cy="12" r="8.2"/><path d="M8.4 12h7.2"/></svg>',
+  trash: SVG_OPEN + '<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>',
+  plus: SVG_OPEN + '<path d="M12 5v14M5 12h14"/></svg>',
+  check: SVG_OPEN + '<path d="M5 13l4 4L19 7"/></svg>',
+  list: SVG_OPEN + '<path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+  board: SVG_OPEN + '<rect x="3.5" y="4.5" width="8" height="7" rx="1.5"/><rect x="12.5" y="10" width="8" height="7" rx="1.5"/></svg>',
+  card: SVG_OPEN + '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg>'
+};
+function icHtml(ic) {
+  if (!ic) return '';
+  if (ic.charAt(0) === '<') return ic;
+  return ICONS[ic] || '';
+}
+function openSheet(title, items) {
+  if (typeof items === 'string') {
+    $('#sheetTitle').textContent = title;
+    $('#sheetBody').innerHTML = items;
+  } else {
+    $('#sheetTitle').textContent = title;
+    $('#sheetBody').innerHTML = items.map((it, i) =>
+      '<button class="menu-item' + (it.danger ? ' danger' : '') + '" data-sheet-i="' + i + '">' +
+      '<span class="ic">' + icHtml(it.ic) + '</span><span>' + it.label + (it.sub ? '<small>' + it.sub + '</small>' : '') + '</span></button>').join('');
+    $('#sheetBody').onclick = ev => {
+      const b = ev.target.closest('[data-sheet-i]');
+      if (!b) return;
+      const it = items[+b.dataset.sheetI];
+      closeSheet();
+      setTimeout(() => it.run && it.run(), 60);
+    };
+  }
+  $('#toast').classList.remove('on');
+  $('#scrim').classList.add('on');
+  $('#sheet').classList.add('on');
+}
+function closeSheet() {
+  $('#scrim').classList.remove('on');
+  $('#sheet').classList.remove('on');
+  $('#sheetBody').onclick = null;
+}
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 1900);
+}
+function confirmDelete(id) {
+  const c = cardById(id);
+  if (!c) return;
+  openSheet('刪除卡片', [
+    { ic: 'trash', label: '確定刪除「' + (c.title || '無標題').slice(0, 20) + '」', sub: '相關連結會一併移除', danger: true, run: () => deleteCard(id) }
+  ]);
+}
+function askReason(from, to) {
+  const a = cardById(from), b = cardById(to);
+  if (!a || !b) return;
+  openSheet('建立連結', '<div class="hint" style="margin:0 0 12px">' + esc(a.title) + ' → ' + esc(b.title) + '</div>' +
+    '<textarea id="whyInput" rows="3" style="background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px" placeholder="這兩個想法為什麼相關？（一句就夠）"></textarea>' +
+    '<div style="display:flex;gap:9px;margin-top:14px"><button class="btn ghost" id="whySkip" style="flex:1">略過</button><button class="btn" id="whySave" style="flex:1">建立連結</button></div>');
+  const val = () => ($('#whyInput').value || '').trim();
+  $('#whySave').onclick = async () => { await addLink(from, to, val()); closeSheet(); renderCurrent(); if (S.cur) renderDetailLinks(); toast('已建立連結'); };
+  $('#whySkip').onclick = async () => { await addLink(from, to, ''); closeSheet(); renderCurrent(); if (S.cur) renderDetailLinks(); toast('已建立連結（未寫理由）'); };
+  setTimeout(() => $('#whyInput') && $('#whyInput').focus(), 240);
+}
+function cardPicker(title, onPick, filterFn) {
+  const rows = S.cards.filter(c => c.id !== S.cur && (!filterFn || filterFn(c))).sort((a, b) => b.updated.localeCompare(a.updated));
+  openSheet(title, '<input id="pickQ" placeholder="搜尋卡片" style="background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px;margin-bottom:10px">' +
+    '<div id="pickList"></div>');
+  const paint = q => {
+    const list = rows.filter(c => !q || (c.title + c.body).toLowerCase().includes(q.toLowerCase())).slice(0, 60);
+    $('#pickList').innerHTML = list.length ? list.map(c =>
+      '<button class="menu-item" data-pick="' + c.id + '"><span class="dot t-' + c.type + '"></span><span>' + esc(c.title) + '</span></button>').join('') :
+      '<div class="hint">沒有符合的卡片。</div>';
+    $$('#pickList [data-pick]').forEach(b => b.onclick = () => { const id = b.dataset.pick; closeSheet(); setTimeout(() => onPick(id), 80); });
+  };
+  paint('');
+  $('#pickQ').oninput = e => paint(e.target.value);
+  setTimeout(() => $('#pickQ') && $('#pickQ').focus(), 240);
+}
+
+/* ---------------- 匯出／匯入 ---------------- */
+function download(name, text, mime) {
+  const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+function exportJSON() {
+  const data = { app: 'zettel-box', version: VERSION, exportedAt: nowISO(), cards: S.cards, links: S.links, boards: S.boards, pos: S.pos };
+  const d = new Date();
+  const name = 'zettel-backup-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+  download(name, JSON.stringify(data, null, 2), 'application/json');
+  toast('備份已匯出');
+}
+function exportMD() {
+  const d = new Date();
+  const lines = ['# 卡片盒備份', '', '匯出時間：' + d.toLocaleString('zh-Hant'), '', '---', ''];
+  S.cards.slice().sort((a, b) => a.created.localeCompare(b.created)).forEach(c => {
+    lines.push('## ' + (c.title || '無標題'));
+    lines.push('');
+    lines.push('類型：' + (TYPE_LABEL[c.type] || c.type) + (c.tags.length ? '　標籤：' + c.tags.join(', ') : ''));
+    if (c.source) lines.push('來源：' + c.source);
+    lines.push('');
+    lines.push(c.body || '');
+    lines.push('');
+    const out = linksOut(c.id).map(l => { const t = cardById(l.to); return t ? '- → [[' + t.title + ']]' + (l.why ? '：' + l.why : '') : ''; }).filter(Boolean);
+    if (out.length) { lines.push('連結：'); lines.push.apply(lines, out); lines.push(''); }
+    lines.push('---');
+    lines.push('');
+  });
+  download('zettel-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.md', lines.join('\n'), 'text/markdown;charset=utf-8');
+  toast('Markdown 已匯出');
+}
+async function importJSON(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || !Array.isArray(data.cards)) throw new Error('格式不正確');
+    const msg = '現有 ' + S.cards.length + ' 張卡、' + S.links.length + ' 條連結會被取代，確定匯入？';
+    if (!confirm(msg)) return;
+    await clearAll();
+    S.cards = data.cards || []; S.links = data.links || []; S.boards = data.boards || []; S.pos = data.pos || [];
+    for (const c of S.cards) await put('cards', c);
+    for (const l of S.links) await put('links', l);
+    for (const b of S.boards) await put('boards', b);
+    for (const p of S.pos) await put('pos', p);
+    if (!S.boards.length) { const b = { id: uid('b_'), name: '思考白板', created: nowISO() }; S.boards.push(b); await put('boards', b); }
+    S.boardId = S.boards[0].id;
+    renderCurrent();
+    toast('匯入完成：' + S.cards.length + ' 張卡');
+  } catch (err) {
+    toast('匯入失敗：' + (err.message || '檔案有問題'));
+  }
+}
+
+/* ---------------- 事件 ---------------- */
+document.addEventListener('click', async e => {
+  const tab = e.target.closest('.tab');
+  if (tab) { go(tab.dataset.view); return; }
+  const chip = e.target.closest('#typeFilter .chip');
+  if (chip) {
+    S.typeFilter = chip.dataset.t;
+    $$('#typeFilter .chip').forEach(c => c.classList.toggle('on', c === chip));
+    renderLibrary(); return;
+  }
+  const tbtn = e.target.closest('#themeSeg button');
+  if (tbtn) {
+    document.documentElement.dataset.theme = tbtn.dataset.themeV;
+    localStorage.setItem('zb-theme', tbtn.dataset.themeV);
+    $('#themeSeg') && renderMore();
+    return;
+  }
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  switch (act) {
+    case 'capture': capture(); break;
+    case 'focus-capture': $('#capText').focus(); break;
+    case 'open-card': e.preventDefault(); openCard(id); break;
+    case 'close-detail': closeDetail(); break;
+    case 'd-edit': showPreview(false); break;
+    case 'd-prev': doSave(true).then(() => showPreview(true)); break;
+    case 'new-card': {
+      const c = await newCard({ type: S.typeFilter === 'all' ? 'permanent' : S.typeFilter });
+      renderLibrary(); openCard(c.id); setTimeout(() => $('#dTitle').focus(), 300);
+      break;
+    }
+    case 'upgrade': {
+      const c = cardById(id);
+      openSheet('升級為哪一種筆記？', [
+        { ic: '<span class="dot t-permanent"></span>', label: '永久筆記', sub: '你自己的見解，一卡一想法', run: () => upgradeTo(id, 'permanent') },
+        { ic: '<span class="dot t-literature"></span>', label: '文獻筆記', sub: '摘錄來源，加上你的回應', run: () => upgradeTo(id, 'literature') },
+        { ic: '<span class="dot t-index"></span>', label: '索引卡', sub: '把多張卡串成主題地圖', run: () => upgradeTo(id, 'index') }
+      ]);
+      break;
+    }
+    case 'del-card': confirmDelete(id); break;
+    case 'tag-filter': {
+      const tag = el.dataset.tag;
+      await doSave(true);
+      $('#detail').classList.remove('on'); S.cur = null;
+      S.q = tag; S.typeFilter = 'all';
+      $$('#typeFilter .chip').forEach(c => c.classList.toggle('on', c.dataset.t === 'all'));
+      $('#q').value = tag;
+      go('cards');
+      break;
+    }
+    case 'del-tag': {
+      const i = +el.dataset.i;
+      const tags = currentTags(); tags.splice(i, 1);
+      renderChips(tags); scheduleSave(); break;
+    }
+    case 'add-link': {
+      cardPicker('連到哪一張卡？', to => askReason(S.cur, to));
+      break;
+    }
+    case 'unlink': {
+      await removeLink(id); renderDetailLinks(); await doSave(true); renderCurrent(); break;
+    }
+    case 'card-menu': {
+      const c = cardById(S.cur);
+      openSheet('卡片操作', [
+        { ic: 'board', label: '放到目前白板', run: async () => { await placeCard(S.cur); renderBoard(); toast('已加到白板'); } },
+        { ic: 'trash', label: '刪除卡片', danger: true, run: () => confirmDelete(S.cur) }
+      ]);
+      break;
+    }
+    case 'board-menu': {
+      const items = S.boards.map(b => ({ ic: S.boardId === b.id ? 'check' : '', label: b.name, run: () => { S.boardId = b.id; renderBoard(); put('meta', { key: 'lastBoard', v: b.id }); } }));
+      items.push({ ic: 'plus', label: '新增白板', run: async () => {
+        const b = { id: uid('b_'), name: '白板 ' + (S.boards.length + 1), created: nowISO() };
+        S.boards.push(b); await put('boards', b); S.boardId = b.id; renderBoard();
+      }});
+      openSheet('白板', items);
+      break;
+    }
+    case 'board-add': {
+      openSheet('加入卡片', [
+        { ic: 'edit', label: '新卡片', sub: '在此白板建立並放到中央', run: async () => {
+          const c = await newCard({ type: 'permanent' });
+          await placeCard(c.id); renderBoard(); openCard(c.id);
+        }},
+        { ic: 'list', label: '從卡片庫挑選', run: () => cardPicker('選擇卡片', async cid => { await placeCard(cid); renderBoard(); }, c => !S.pos.some(p => p.boardId === S.boardId && p.cardId === c.id)) }
+      ]);
+      break;
+    }
+    case 'link-mode': {
+      if (S.linkMode) { S.linkMode = null; $('#linkBtn').classList.remove('on'); markSel(null); drawLines(); toast('已退出連結模式'); }
+      else { S.linkMode = 'pick'; $('#linkBtn').classList.add('on'); toast('點第一張卡'); }
+      break;
+    }
+    case 'fit-view': fitView(); break;
+    case 'close-sheet': closeSheet(); break;
+    case 'export-json': exportJSON(); break;
+    case 'export-md': exportMD(); break;
+    case 'import-json': $('#fileInput').click(); break;
+  }
+});
+
+async function upgradeTo(id, type) {
+  const c = cardById(id);
+  if (!c) return;
+  c.type = type;
+  await saveCard(c, { quiet: true });
+  renderInbox();
+  openCard(id);
+}
+
+async function capture() {
+  const t = $('#capText').value.trim();
+  if (!t) { $('#capText').focus(); return; }
+  const c = await newCard({ type: 'fleeting', body: t });
+  await put('cards', c);
+  $('#capText').value = '';
+  $('#capText').style.height = '';
+  renderInbox();
+  toast('已存入收件匣');
+}
+
+$('#capText').addEventListener('input', e => {
+  e.target.style.height = 'auto';
+  e.target.style.height = Math.max(58, e.target.scrollHeight) + 'px';
+});
+$('#q').addEventListener('input', e => { S.q = e.target.value; renderLibrary(); });
+$('#dTitle').addEventListener('input', scheduleSave);
+$('#dBody').addEventListener('input', () => { autoGrow(); scheduleSave(); });
+$('#dSource').addEventListener('input', scheduleSave);
+$('#dTags').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',' || e.key === ' ' || e.key === '，') {
+    e.preventDefault();
+    const v = e.target.value.trim().replace(/^#/, '');
+    if (v) {
+      const tags = currentTags();
+      if (!tags.includes(v)) tags.push(v);
+      renderChips(tags); e.target.value = ''; scheduleSave();
+    }
+  }
+});
+$('#dTags').addEventListener('blur', e => {
+  const v = e.target.value.trim().replace(/^#/, '');
+  if (v) { const tags = currentTags(); if (!tags.includes(v)) tags.push(v); renderChips(tags); e.target.value = ''; scheduleSave(); }
+});
+$$('#dTypes button').forEach(b => b.addEventListener('click', () => {
+  const c = cardById(S.cur);
+  if (!c) return;
+  c.type = b.dataset.type;
+  renderTypeSeg(c.type);
+  saveCard(c, { quiet: true }).then(renderCurrent);
+}));
+$('#fileInput').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) importJSON(f);
+  e.target.value = '';
+});
+
+/* 初始化 */
+async function boot() {
+  const theme = localStorage.getItem('zb-theme');
+  if (theme) document.documentElement.dataset.theme = theme;
+  try {
+    db = await dbOpen();
+    S.cards = await all('cards');
+    S.links = await all('links');
+    S.boards = await all('boards');
+    S.pos = await all('pos');
+    const metas = await all('meta');
+    metas.forEach(m => { S.meta[m.key] = m; });
+    if (navigator.storage && navigator.storage.persist) {
+      try { persistOK = await navigator.storage.persist(); } catch (e) { persistOK = false; }
+    }
+  } catch (err) {
+    persistOK = false;
+    idbOK = false;
+    console.warn('IndexedDB 不可用，改為暫存模式', err);
+  }
+  if (!S.boards.length) {
+    const b = { id: uid('b_'), name: '思考白板', created: nowISO() };
+    S.boards.push(b);
+    if (db) await put('boards', b);
+  }
+  S.boardId = (S.meta.lastBoard && S.meta.lastBoard.v) || S.boards[0].id;
+  if (!boardById(S.boardId)) S.boardId = S.boards[0].id;
+  go('inbox');
+  window.__app = { S, VERSION };
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+boot();
+</script>
+</body>
+</html>

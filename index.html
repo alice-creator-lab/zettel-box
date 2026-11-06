@@ -113,7 +113,7 @@ input,textarea{background:transparent;border:0;outline:0;width:100%}
 
 /* 空狀態 */
 .empty{text-align:center;color:var(--muted);padding:46px 18px;line-height:1.7}
-.empty .glyph{font-size:30px;opacity:.5;display:block;margin-bottom:10px}
+.empty .glyph{display:block;margin:0 auto 12px;color:var(--muted);opacity:.55;line-height:0}
 .empty b{display:block;color:var(--ink);font-weight:600;margin-bottom:6px;font-size:16px}
 
 /* 篩選 */
@@ -426,6 +426,10 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({ '&': '&am
 const nowISO = () => new Date().toISOString();
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const TYPE_LABEL = { fleeting: '閃念', literature: '文獻', permanent: '永久', index: '索引' };
+const GLYPH = {
+  write: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 5l5 5"/></svg>',
+  cards: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M4 10.5h16"/></svg>'
+};
 
 function hm(iso) {
   const d = new Date(iso), t = new Date();
@@ -621,7 +625,7 @@ function renderInbox() {
       '</div>' +
     '</div>'
   )).join('') : (
-    '<div class="empty"><span class="glyph">✎</span><b>收件匣是空的</b>在上方寫下一句話，不必完整。<br>整理時再決定它是文獻、永久，還是索引。</div>'
+    '<div class="empty"><span class="glyph">' + GLYPH.write + '</span><b>收件匣是空的</b>在上方寫下一句話，不必完整。<br>整理時再決定它是文獻、永久，還是索引。</div>'
   );
 }
 
@@ -635,7 +639,7 @@ function renderLibrary() {
   }
   list.sort((a, b) => b.updated.localeCompare(a.updated));
   if (!list.length) {
-    $('#libList').innerHTML = '<div class="empty"><span class="glyph">◫</span><b>' +
+    $('#libList').innerHTML = '<div class="empty"><span class="glyph">' + GLYPH.cards + '</span><b>' +
       (q || S.typeFilter !== 'all' ? '沒有符合的卡片' : '還沒有卡片') +
       '</b>' + (q || S.typeFilter !== 'all' ? '試試其他關鍵字或篩選。' : '由收件匣升級，或按右上角新增。') + '</div>';
     return;
